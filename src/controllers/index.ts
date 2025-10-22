@@ -1,0 +1,13 @@
+export { AuthController } from "./auth.controller";
+export { OauthController } from "./oauth.controller";
+export { UsersController } from "./users.controller";
+// export { adminControllers } from "./admin.controllers";
+// export { postControllers } from "./post.controllers";
+// export { transactionControllers } from "./transactions.controllers";
+// export { uploadControllers } from "./uploads.controllers";
+// export { notificationControllers } from "./notifications.controllers";
+// export { rewardsControllers } from "./rewards.controllers";
+// export { messageControllers } from "./message.controllers";
+// export { reportsControllers } from "./reports.controllers";
+// export { socialAuthControllers } from "./socialauth.controllers";
+// export { appstoreControllers } from "./appstore.controllers";

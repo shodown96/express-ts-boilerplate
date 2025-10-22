@@ -1,0 +1,22 @@
+export { prisma } from "./prisma.service";
+export { AuthService } from "./auth.service";
+export { AccountService } from "./accounts.service";
+export { EmailService } from "./email.service";
+// export { default as AdminService } from "./admin.service";
+// export { default as AppStoreService } from "./appstore.service";
+// export { default as AWSService } from "./aws.service";
+// export { default as CloudinaryService } from "./cloudinary.service";
+// export { default as ExpoPushService } from "./expo.service";
+// export { default as FileService } from "./files.service";
+// export { default as MessageService } from "./message.service";
+// export { default as NotificationService } from "./notifications.service";
+// export { default as PostService } from "./posts.service";
+// export { default as ReportService } from "./reports.service";
+// export { default as RewardService } from "./rewards.service";
+// export { default as SocialAuthService } from "./socialauth.service";
+// export { onlineUsers, default as SocketService } from "./socket.service";
+// export { stripe, default as StripeService } from "./stripe.service";
+// export { default as TransactionService } from "./transaction.service";
+// export { default as UploadService } from "./upload.service";
+// export { default as SharpService } from "./sharp.service";
+

@@ -1,0 +1,121 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id              String          @id @default(cuid())
+  name            String
+  email           String          @unique
+  password        String?
+  avatar          File?           @relation(fields: [avatarId], references: [id], onDelete: Cascade)
+  avatarId        String?
+  appAccountToken String          @default(uuid())
+  role            AccountRole     @default(user)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  business        Business?
+  subscription    Subscription?
+  accountDevices  AccountDevice[]
+  lastLogin       DateTime?
+  deleted         Boolean         @default(false)
+  deletedAt       DateTime?
+  banned          Boolean         @default(false)
+  bannedAt        DateTime?
+}
+
+model File {
+  id       String    @id @default(cuid())
+  url      String
+  accounts Account[]
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  code      String
+  createdAt DateTime @default(now())
+}
+
+model Business {
+  id        String    @id @default(cuid())
+  verfified Boolean   @default(false)
+  name      String?   @default("")
+  email     String    @unique
+  phone     String?   @default("")
+  website   String?   @default("")
+  location  String?   @default("")
+  twitter   String?   @default("")
+  linkedIn  String?   @default("")
+  instagram String?   @default("")
+  category  Category?
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Subscription {
+  id           String        @id @default(cuid())
+  plan         String
+  apiId        String        @unique
+  status       String
+  amount       Float
+  active       Boolean       @default(true)
+  paidAt       DateTime      @default(now())
+  cancelledAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  account      Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId    String        @unique
+  transactions Transaction[]
+}
+
+model Transaction {
+  id             String          @id @default(cuid())
+  status         String
+  apiId          String          @default("") //InvoiceId or TransactionId
+  source         String
+  destination    String
+  amount         Float
+  currency       String          @default("USD")
+  type           TransactionType
+  subscription   Subscription?   @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  subscriptionId String?
+  paidAt         DateTime        @default(now())
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  // provider = 'apple' | 'stripe'
+}
+
+model AccountDevice {
+  id            String   @id @default(cuid())
+  name          String
+  expoPushToken String   @unique
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum AccountRole {
+  superadmin
+  admin
+  user
+}
+
+enum Category {
+  designer
+  developer
+}
+
+enum TransactionType {
+  subscription
+  contract
+}

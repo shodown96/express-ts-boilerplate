@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Password Reset OTP</title>
+  </head>
+  <body
+    style="
+      font-family: &quot;Arial&quot;, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    "
+  >
+    <table
+      align="center"
+      cellpadding="0"
+      cellspacing="0"
+      width="600"
+      style="
+        border-collapse: collapse;
+        background-color: #ffffff;
+        margin-top: 30px;
+      "
+    >
+      <tr>
+        <td style="padding: 0px 40px; text-align: left">
+          <h3 style="color: #333333">{{otp}} is your password reset OTP</h3>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 20px 40px; text-align: left">
+          <p style="color: #555555; font-size: 16px">Hi {{name}},</p>
+          <p style="color: #555555; font-size: 16px">
+            To ensure the security of your {{appName}} account, please use
+            the following One-Time Password (OTP) to reset your password:
+          </p>
+          <p style="color: #555555; font-size: 16px; font-weight: bold">
+            Your OTP: {{otp}}
+          </p>
+          <!-- <p style="color: #555555; font-size: 16px">
+            This code will expire in 10 minutes. If you did not request to reset
+            your password, please contact our support team immediately.
+          </p> -->
+          <p style="color: #555555; font-size: 16px">
+            Thank you for choosing {{appName}}!
+          </p>
+          <p style="color: #555555; font-size: 16px">
+            Best regards,<br />The {{appName}} Team
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

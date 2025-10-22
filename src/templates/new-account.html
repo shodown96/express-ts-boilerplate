@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to {{appName}}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333333;
+        }
+
+        p {
+            font-size: 16px;
+            color: #555555;
+            line-height: 1.5;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: #F14177;
+            color: #ffffff;
+            padding: 12px 20px;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .cta-button:hover {
+            background-color: #E90662;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #777777;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2 style="display: flex; justify-content: center;">Welcome to {{appName}}</h2>
+        <p>Hi {{name}},</p>
+
+        <p>We’re thrilled to have you on board! <strong>Welcome to {{appName}}</strong>, an app designed for fashion
+            professionals like you to connect, collaborate, and showcase your portfolio to the world.</p>
+
+        <p>An account has been setup for you with the following credentials:</p>
+
+        <ul>
+            <li>Email: {{email}}</li>
+            <li>Password: {{password}}</li>
+        </ul>
+        <p>Please ensure you change your password immediately after signing in.</p>
+        <p>You also have free access to all the perks of a business account for three months—no subscription required.
+            Enjoy🎉</p>
+
+        <p>Best regards,</p>
+        <p><strong>The {{appName}} Team</strong></p>
+    </div>
+
+</body>
+
+</html>
