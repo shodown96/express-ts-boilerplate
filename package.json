@@ -7,12 +7,14 @@
       "build": "npx tsc",
       "start": "prisma migrate dev && ts-node -r tsconfig-paths/register src/index.ts",
       "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
+      "scripts": "tsx prisma/scripts.ts",
+      "postinstall": "prisma generate",
       "db:push": "prisma db push",
       "db:migrate": "prisma migrate dev",
-      "postinstall": "prisma generate",
       "db:studio": "prisma studio",
       "db:seed": "tsx prisma/seed.ts",
-      "scripts": "tsx prisma/scripts.ts"
+      "db:reset": "prisma migrate reset",
+      "db:restart":"yarn db:reset && yarn db:migrate && yarn db:seed"
    },
    "author": "",
    "license": "ISC",

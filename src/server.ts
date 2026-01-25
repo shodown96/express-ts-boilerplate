@@ -32,10 +32,6 @@ app.use(
 app.use(cookieParser());
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-export const port = process.env.PORT || 4000;
-
-
-
 app.use((req, res, next) => {
   res.setHeader("X-Powered-By", APP_NAME);
   next();

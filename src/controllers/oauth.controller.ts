@@ -14,13 +14,14 @@ export class OauthController {
     static googleSignIn: RequestHandler = async (req, res) => {
         try {
             const { code } = req.body;
+            const referrer = req.headers.referer;
             const tokenRes = await axios.post(
                 'https://oauth2.googleapis.com/token',
                 new URLSearchParams({
                     code: decodeURIComponent(code),
                     client_id: process.env.GOOGLE_CLIENT_ID!,
                     client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-                    redirect_uri: `${process.env.SSO_CALLBACK_URL}`,
+                    redirect_uri: `${referrer}sso-callback`,
                     grant_type: 'authorization_code',
                 }),
                 {
@@ -44,7 +45,13 @@ export class OauthController {
             let updated;
             if (existingAccount) {
                 updated = await AccountService.updateAccount(existingAccount.id, {
-                    avatar: { create: { url: user.picture } },
+                    avatar: {
+                        upsert: {
+                            where: { id: String(existingAccount.avatarId) },
+                            create: { url: user.picture },
+                            update: { url: user.picture }
+                        }
+                    },
                     lastLogin: new Date(),
                 });
             } else {
@@ -78,7 +85,7 @@ export class OauthController {
             }
             return constructResponse({
                 res,
-                message: STRINGS.LoggedOut,
+                message: STRINGS.LoginSuccess,
                 code: 200,
                 data: updated,
                 apiObject: API_OBJECTS.Account,

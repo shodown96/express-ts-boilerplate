@@ -22,7 +22,7 @@ export class AccountService {
       },
       include: { avatar: { select: { url: true } } },
     });
-    prisma.verificationToken.delete({
+    prisma.verificationToken.deleteMany({
       where: { email: account.email },
     });
     return { ...account, password: !!params.password }

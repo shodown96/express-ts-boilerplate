@@ -1,4 +1,5 @@
-import server, { port } from "./server";
+import { port } from "./app";
+import server from "./server";
 import { getLocalIp } from "./utilities/ip";
 
 server.listen(port, () => {
