@@ -54,17 +54,7 @@ export class AuthController {
       const accessToken = AuthService.generateAccessToken(user);
       const refreshToken = AuthService.generateRefreshToken(user);
 
-      // res.cookie(ACCESS_TOKEN_NAME, accessToken, {
-      //   httpOnly: true,
-      //   maxAge: 24 * 60 * 60 * 1000, // Output: 86400000
-      //   sameSite: "lax",
-      //   secure: process.env.NODE_ENV === "development" ? false : true,
-      //   domain:
-      //     process.env.NODE_ENV === "development"
-      //       ? "localhost"
-      //       : process.env.DOMAIN,
-      //   path: "/",
-      // });
+      // AuthService.setCookie({ req, res, token: accessToken, tokenName: ACCESS_TOKEN_NAME })
       const hasPassed = hasDatePassed("2025-03-14")
       EmailService.sendHTMLEmail({
         email,
@@ -163,17 +153,8 @@ export class AuthController {
 
       const accessToken = AuthService.generateAccessToken(user);
       const refreshToken = AuthService.generateRefreshToken(user);
-      // res.cookie(ACCESS_TOKEN_NAME, accessToken, {
-      //   httpOnly: true,
-      //   maxAge: 24 * 60 * 60 * 1000, // Output: 86400000
-      //   sameSite: "lax",
-      //   secure: process.env.NODE_ENV === "development" ? false : true,
-      //   domain:
-      //     process.env.NODE_ENV === "development"
-      //       ? "localhost"
-      //       : process.env.DOMAIN,
-      //   path: "/",
-      // });
+
+      // AuthService.setCookie({ req, res, token: accessToken, tokenName: ACCESS_TOKEN_NAME })
 
       const data = {
         user: {
@@ -193,6 +174,31 @@ export class AuthController {
         apiObject: API_OBJECTS.Account,
       });
     } catch (error) {
+      return constructResponse({
+        res,
+        message: ERROR_MESSAGES.InternalServerError,
+        code: 500,
+        data: error,
+        apiObject: API_OBJECTS.Account,
+      });
+    }
+  };
+
+  static signOut: RequestHandler = async (req, res) => {
+    const { expoPushToken } = req.body
+    if (expoPushToken) {
+      await AccountService.removeExpoPushToken(req.user.id, expoPushToken)
+    }
+    try {
+      AuthService.removeCookie({req, res, tokenName:ACCESS_TOKEN_NAME})
+      return constructResponse({
+        res,
+        message: STRINGS.LoggedOut,
+        code: 200,
+        apiObject: API_OBJECTS.Account,
+      });
+    } catch (error) {
+      // console.error(error);
       return constructResponse({
         res,
         message: ERROR_MESSAGES.InternalServerError,
@@ -615,37 +621,4 @@ export class AuthController {
     }
   };
 
-  static signOut: RequestHandler = async (req, res) => {
-    const { expoPushToken } = req.body
-    if (expoPushToken) {
-      await AccountService.removeExpoPushToken(req.user.id, expoPushToken)
-    }
-    try {
-      res.clearCookie(ACCESS_TOKEN_NAME, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "development" ? false : true,
-        domain:
-          process.env.NODE_ENV === "development"
-            ? "localhost"
-            : process.env.DOMAIN,
-        path: "/",
-      });
-      return constructResponse({
-        res,
-        message: STRINGS.LoggedOut,
-        code: 200,
-        apiObject: API_OBJECTS.Account,
-      });
-    } catch (error) {
-      // console.error(error);
-      return constructResponse({
-        res,
-        message: ERROR_MESSAGES.InternalServerError,
-        code: 500,
-        data: error,
-        apiObject: API_OBJECTS.Account,
-      });
-    }
-  };
 }

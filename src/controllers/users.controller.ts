@@ -10,7 +10,7 @@ export class UsersController {
         res,
         message: STRINGS.Success,
         code: 200,
-        data: req.user,
+        data: { ...req.user, role: undefined, isAdmin: req.user.role.includes("admin") },
         apiObject: API_OBJECTS.Account,
       });
     } catch (error) {

@@ -1,6 +1,7 @@
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt"
 import { VERIFICATION_TOEKN_LENGTH } from "@/constants/app";
+import bcrypt from "bcrypt";
+import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
 
 export class AuthService {
   // Middleware to generate access tokens
@@ -60,6 +61,42 @@ export class AuthService {
 
   static comparePasswords = async (plainPassword: string, hashedPassword: string) => {
     return await bcrypt.compare(plainPassword, hashedPassword)
+  }
+
+  static setCookie = ({ req, res, token, tokenName }: {
+    req: Request,
+    res: Response,
+    token: string,
+    tokenName: string
+  }) => {
+    const secure = process.env.NODE_ENV !== "development" || (
+      !req.headers.referer?.includes("localhost")
+    )
+    res.cookie(tokenName, token, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // Output: 86400000
+      sameSite: "lax",
+      secure,
+      domain: secure ? "localhost" : process.env.DOMAIN,
+      path: "/",
+    });
+  }
+
+  static removeCookie = ({ req, res, tokenName }: {
+    req: Request,
+    res: Response,
+    tokenName: string
+  }) => {
+    const secure = process.env.NODE_ENV !== "development" || (
+      !req.headers.referer?.includes("localhost")
+    )
+    res.clearCookie(tokenName, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure,
+      domain: secure ? "localhost" : process.env.DOMAIN,
+      path: "/",
+    });
   }
 
 }
