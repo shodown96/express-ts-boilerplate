@@ -16,6 +16,7 @@ model Account {
   password        String?
   avatar          File?           @relation(fields: [avatarId], references: [id], onDelete: Cascade)
   avatarId        String?
+  // avatarUrl       String?
   appAccountToken String          @default(uuid())
   role            AccountRole     @default(user)
   createdAt       DateTime        @default(now())
