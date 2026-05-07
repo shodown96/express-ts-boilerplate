@@ -1,4 +1,3 @@
-// src/index.js
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -16,21 +15,17 @@ app.use(
     limit: "10mb",
     verify: function (req: any, res, buf) {
       var url = req.originalUrl;
-      if (url.startsWith("/api/v1/transactions/webhooks/stripe")) {
+      if (url.includes("/transactions/webhooks/stripe")) {
         req.rawBody = buf.toString();
       }
     },
   }),
 );
-// app.use(raw({ type: 'application/json' }))
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  }),
-);
+
+app.use(json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(cors({ origin: allowedOrigins, credentials: true, }));
 
 app.use((req, res, next) => {
   res.setHeader("X-Powered-By", APP_NAME);

@@ -26,16 +26,11 @@ export const ERROR_MESSAGES = {
     InactiveSubscription: "You're not not on an active subscription",
     DifferentOwner: "Unable to process. Resource owned by another user.",
     WebsocketAuthenticationError: "Websocket Connection not authenticated.",
-    PhotoshootRequestDenied: "You can't have a photoshoot yet.",
 }
 export const STRINGS = {
     NewContactSubmission: "New Contact Submission.",
     SubmittedSuccessfully:
         "Thank you! we've received your submission, we'll be in touch.",
-    QuotesSuccessfullyRetrieved:
-        "Quotes successfully retrieved from Animechan and stored.",
-    QuotesSuccessfullyRetrievedFromDB: "Quotes successfully retrieved from DB.",
-    QuoteSuccessfullyRetrievedFromDB: "Quote successfully retrieved from DB.",
     RegistrationSuccessful: "Registration successful.",
     PasswordLinkSent:
         "A password reset link has been sent to your email account.",
@@ -54,10 +49,6 @@ export const STRINGS = {
     EmailVerified: "Your email has been verified successfully.",
     PhoneVerified: "Your phone has been verified successfully.",
     OTPVerified: "Your OTP has been verified successfully.",
-    AccountUpgradedTalent:
-        "Your account has been upgraded to a Talent account successfully.",
-    AccountUpgradedBusiness:
-        "Your account has been upgraded to a Business account successfully.",
     Success: "Success.",
     SubscriptionCancelled: "Subscription cancelled!",
     ProfileUpdateSuccess: "Profile Updated!",

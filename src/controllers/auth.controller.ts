@@ -11,18 +11,8 @@ import { ERROR_MESSAGES, STRINGS } from "@/constants/messages";
 
 export class AuthController {
 
-  // Register a new user
   static signUp: RequestHandler = async (req, res) => {
-    // if (process.env.NODE_ENV === "production") {
-    //   return constructResponse({
-    //     res,
-    //     message: "This app is currently locked.",
-    //     code: 500,
-    //     apiObject: API_OBJECTS.Auth,
-    //   });
-    // }
-    const { email } = req.body;
-    if (!email)
+    if (!req.body?.email)
       return constructResponse({
         res,
         message: ERROR_MESSAGES.BadRequestError,
@@ -31,7 +21,7 @@ export class AuthController {
       });
 
     try {
-      const existing = await AccountService.getAccount(email);
+      const existing = await AccountService.getAccount(req.body.email);
       if (existing) {
         return constructResponse({
           res,
@@ -40,8 +30,13 @@ export class AuthController {
           apiObject: API_OBJECTS.Account,
         });
       }
-      const { code, ...rest } = req.body
-      const user = await AccountService.createAccount(rest);
+
+      const user = await AccountService.createAccount({
+        name: req.body.name,
+        email: req.body.email,
+        password: req.body.password,
+      });
+
       if (!user) {
         return constructResponse({
           res,
@@ -54,22 +49,19 @@ export class AuthController {
       const accessToken = AuthService.generateAccessToken(user);
       const refreshToken = AuthService.generateRefreshToken(user);
 
-      // AuthService.setCookie({ req, res, token: accessToken, tokenName: ACCESS_TOKEN_NAME })
-      const hasPassed = hasDatePassed("2025-03-14")
+      const hasPassed = hasDatePassed("2025-03-14");
       EmailService.sendHTMLEmail({
-        email,
-        subject:
-          `Welcome to The ${APP_NAME}`,
+        email: req.body.email,
+        subject: `Welcome to The ${APP_NAME}`,
         params: { name: getFirstName(user.name) },
         emailType: hasPassed ? "welcome" : "welcome2",
       });
 
-      const data = { user: { ...user, role: undefined }, accessToken, refreshToken };
       return constructResponse({
         res,
         message: STRINGS.Success,
         code: 201,
-        data,
+        data: { user: { ...user, role: undefined }, accessToken, refreshToken },
         apiObject: API_OBJECTS.Account,
       });
     } catch (error) {
@@ -83,10 +75,8 @@ export class AuthController {
     }
   };
 
-  // Login with an existing user
   static signIn: RequestHandler = async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
+    if (!req.body?.email || !req.body?.password) {
       return constructResponse({
         res,
         message: ERROR_MESSAGES.BadRequestError,
@@ -95,7 +85,7 @@ export class AuthController {
       });
     }
     try {
-      const user = await AccountService.getAccount(email, true);
+      const user = await AccountService.getAccount(req.body.email, true);
 
       if (!user) {
         return constructResponse({
@@ -107,9 +97,8 @@ export class AuthController {
       }
 
       const referer = req.get('Referer');
-      // console.log("referrer", referer)
       if (!referer) {
-        const platform = req.query.PLATFORM
+        const platform = req.query.PLATFORM;
         if (platform) {
           if (user?.role === AccountRole.admin) {
             return constructResponse({
@@ -133,7 +122,7 @@ export class AuthController {
         }
       }
 
-      const isPasswordCorrect = await AccountService.authenticate(email, password);
+      const isPasswordCorrect = await AccountService.authenticate(req.body.email, req.body.password);
       if (!isPasswordCorrect.isAuthenticated) {
         if (isPasswordCorrect.isSocialAccount) {
           return constructResponse({
@@ -154,23 +143,20 @@ export class AuthController {
       const accessToken = AuthService.generateAccessToken(user);
       const refreshToken = AuthService.generateRefreshToken(user);
 
-      // AuthService.setCookie({ req, res, token: accessToken, tokenName: ACCESS_TOKEN_NAME })
-
-      const data = {
-        user: {
-          ...user,
-          role: user.role === AccountRole.admin ? AccountRole.admin : undefined,
-          deleted: false,
-          deletedAt: null
-        },
-        accessToken,
-        refreshToken
-      };
       return constructResponse({
         res,
         message: STRINGS.LoginSuccess,
         code: 200,
-        data,
+        data: {
+          user: {
+            ...user,
+            role: user.role === AccountRole.admin ? AccountRole.admin : undefined,
+            deleted: false,
+            deletedAt: null,
+          },
+          accessToken,
+          refreshToken,
+        },
         apiObject: API_OBJECTS.Account,
       });
     } catch (error) {
@@ -185,12 +171,8 @@ export class AuthController {
   };
 
   static signOut: RequestHandler = async (req, res) => {
-    const { expoPushToken } = req.body
-    if (expoPushToken) {
-      await AccountService.removeExpoPushToken(req.user.id, expoPushToken)
-    }
     try {
-      AuthService.removeCookie({req, res, tokenName:ACCESS_TOKEN_NAME})
+      AuthService.removeCookie({ req, res, tokenName: ACCESS_TOKEN_NAME });
       return constructResponse({
         res,
         message: STRINGS.LoggedOut,
@@ -198,7 +180,6 @@ export class AuthController {
         apiObject: API_OBJECTS.Account,
       });
     } catch (error) {
-      // console.error(error);
       return constructResponse({
         res,
         message: ERROR_MESSAGES.InternalServerError,
@@ -209,18 +190,17 @@ export class AuthController {
     }
   };
 
-  // Route to refresh access token using the refresh token
   static getToken: RequestHandler = async (req, res) => {
     try {
-      const refreshToken = req.body.refreshToken;
-      if (!refreshToken)
+      if (!req.body.refreshToken)
         return constructResponse({
           res,
           message: ERROR_MESSAGES.InvalidCredentialsProvided,
           code: 401,
           apiObject: API_OBJECTS.Account,
         });
-      const decodedToken: any = AuthService.verifyRefreshToken(refreshToken);
+
+      const decodedToken: any = AuthService.verifyRefreshToken(req.body.refreshToken);
       if (!decodedToken) {
         return constructResponse({
           res,
@@ -229,9 +209,10 @@ export class AuthController {
           apiObject: API_OBJECTS.Account,
         });
       }
-      const user = await AccountService.getAccount(decodedToken?.accountId);
 
+      const user = await AccountService.getAccount(decodedToken?.accountId);
       const accessToken = AuthService.generateAccessToken(user);
+
       return constructResponse({
         res,
         message: STRINGS.Success,
@@ -250,10 +231,18 @@ export class AuthController {
     }
   };
 
-  static setPassword: RequestHandler = async (req, res, next) => {
+  static setPassword: RequestHandler = async (req, res) => {
     try {
-      const { password } = req.body
-      const user = await AccountService.setAccountPassword(req.user.id, password);
+      if (!req.body.password) {
+        return constructResponse({
+          res,
+          code: 400,
+          message: ERROR_MESSAGES.BadRequestError,
+          apiObject: API_OBJECTS.Auth,
+        });
+      }
+
+      const user = await AccountService.setAccountPassword(req.user.id, req.body.password);
       if (!user) {
         return constructResponse({
           res,
@@ -262,6 +251,7 @@ export class AuthController {
           apiObject: API_OBJECTS.Auth,
         });
       }
+
       return constructResponse({
         res,
         code: 200,
@@ -280,11 +270,8 @@ export class AuthController {
     }
   };
 
-  // TODO: restrict otp sending too many times here too
   static sendCode: RequestHandler = async (req, res) => {
-
-    const { email } = req.body;
-    if (!email)
+    if (!req.body.email)
       return constructResponse({
         res,
         message: ERROR_MESSAGES.BadRequestError,
@@ -293,22 +280,16 @@ export class AuthController {
       });
 
     try {
-      const user = await AccountService.getAccount(email);
-      // if (!user) {
-      //   return constructResponse({
-      //     res,
-      //     message: ERROR_MESSAGES.AccountNotFoundError,
-      //     code: 400,
-      //     apiObject: API_OBJECTS.OTP,
-      //   });
-      // }
-      const otp = await AccountService.createVerificationToken(email);
+      const user = await AccountService.getAccount(req.body.email);
+      const otp = await AccountService.createVerificationToken(req.body.email);
+
       EmailService.sendHTMLEmail({
-        email,
+        email: req.body.email,
         subject: `Your ${APP_NAME} Account Verification OTP`,
-        params: { otp: otp.code, name: getFirstName(user?.name) || email },
+        params: { otp: otp.code, name: getFirstName(user?.name) || req.body.email },
         emailType: "registration",
       });
+
       return constructResponse({
         res,
         message: STRINGS.EmailVerificationSent,
@@ -327,24 +308,23 @@ export class AuthController {
   };
 
   static verifyEmail: RequestHandler = async (req, res) => {
-    const { code } = req.body;
-    if (!code)
+    if (!req.body.code)
       return constructResponse({
         res,
         message: ERROR_MESSAGES.BadRequestError,
         code: 400,
         apiObject: API_OBJECTS.Auth,
       });
+
     try {
-      const dbOTP = await AccountService.getVerificationToken(req.user.email, code);
+      const dbOTP = await AccountService.getVerificationToken(req.user.email, req.body.code);
 
       if (!dbOTP) {
-        return res
-          .status(401)
-          .json({ message: ERROR_MESSAGES.InvalidOTPProvided });
+        return res.status(401).json({ message: ERROR_MESSAGES.InvalidOTPProvided });
       }
 
       await AccountService.deleteVerificationToken(dbOTP.email, dbOTP.code);
+
       return constructResponse({
         res,
         message: STRINGS.EmailVerified,
@@ -363,25 +343,16 @@ export class AuthController {
   };
 
   static checkEmailExists: RequestHandler = async (req, res) => {
-    // if (process.env.NODE_ENV === "production") {
-    //   return constructResponse({
-    //     res,
-    //     message: "This app is currently locked.",
-    //     code: 500,
-    //     apiObject: API_OBJECTS.Auth,
-    //   });
-    // }
-
-    const { email } = req.body;
-    if (!email)
+    if (!req.body.email)
       return constructResponse({
         res,
         message: ERROR_MESSAGES.BadRequestError,
         code: 400,
         apiObject: API_OBJECTS.Auth,
       });
+
     try {
-      const existing = await AccountService.checkIfEmailExists(email);
+      const existing = await AccountService.checkIfEmailExists(req.body.email);
       if (existing) {
         return constructResponse({
           res,
@@ -390,6 +361,7 @@ export class AuthController {
           apiObject: API_OBJECTS.Account,
         });
       }
+
       return constructResponse({
         res,
         message: STRINGS.Success,
@@ -408,16 +380,16 @@ export class AuthController {
   };
 
   static verifyCode: RequestHandler = async (req, res) => {
-    const { code, reset = false } = req.body;
-    if (!code)
+    if (!req.body.code)
       return constructResponse({
         res,
         message: ERROR_MESSAGES.BadRequestError,
         code: 400,
         apiObject: API_OBJECTS.Auth,
       });
+
     try {
-      const dbOTP = await AccountService.verifyVerificationTokenbyCode(code);
+      const dbOTP = await AccountService.verifyVerificationTokenbyCode(req.body.code);
       if (!dbOTP) {
         return constructResponse({
           res,
@@ -426,6 +398,7 @@ export class AuthController {
           apiObject: API_OBJECTS.OTP,
         });
       }
+
       return constructResponse({
         res,
         message: STRINGS.OTPVerified,
@@ -433,7 +406,7 @@ export class AuthController {
         apiObject: API_OBJECTS.OTP,
       });
     } catch (error) {
-      console.log(error)
+      console.log(error);
       return constructResponse({
         res,
         message: ERROR_MESSAGES.InternalServerError,
@@ -446,26 +419,15 @@ export class AuthController {
 
   static forgotPassword: RequestHandler = async (req, res) => {
     try {
-      const { email } = req.body;
-      if (!email)
+      if (!req.body.email)
         return constructResponse({
           res,
           message: ERROR_MESSAGES.BadRequestError,
           code: 400,
           apiObject: API_OBJECTS.Auth,
         });
-      // console.log(req.headers["user-agent"])
-      // if (email.includes("blacklist_email")) {
-      //   if (!req.headers.referer) {
-      //     return constructResponse({
-      //       res,
-      //       message: ERROR_MESSAGES.AuthenticationError,
-      //       code: 400,
-      //       apiObject: API_OBJECTS.OTP,
-      //     });
-      //   }
-      // }
-      const user = await AccountService.getAccount(email);
+
+      const user = await AccountService.getAccount(req.body.email);
       if (!user)
         return constructResponse({
           res,
@@ -474,13 +436,14 @@ export class AuthController {
           apiObject: API_OBJECTS.OTP,
         });
 
-      const otp = await AccountService.createVerificationToken(email);
+      const otp = await AccountService.createVerificationToken(req.body.email);
       EmailService.sendHTMLEmail({
-        email,
+        email: req.body.email,
         subject: `Your ${APP_NAME} password Reset OTP`,
         params: { otp: otp.code, name: user.name.split(" ")[0] },
         emailType: "reset",
       });
+
       return constructResponse({
         res,
         message: STRINGS.EmailVerificationSent,
@@ -488,7 +451,6 @@ export class AuthController {
         apiObject: API_OBJECTS.Account,
       });
     } catch (error) {
-      // console.error(error);
       return constructResponse({
         res,
         message: ERROR_MESSAGES.InternalServerError,
@@ -501,16 +463,15 @@ export class AuthController {
 
   static resetPassword: RequestHandler = async (req, res) => {
     try {
-      const { password, code, email } = req.body;
-      if (!password || !code || !email)
+      if (!req.body.password || !req.body.code || !req.body.email)
         return constructResponse({
           res,
           message: ERROR_MESSAGES.BadRequestError,
           code: 400,
           apiObject: API_OBJECTS.Auth,
         });
-      const dbOTP = await AccountService.getVerificationToken(email, code);
 
+      const dbOTP = await AccountService.getVerificationToken(req.body.email, req.body.code);
       if (!dbOTP) {
         return constructResponse({
           res,
@@ -530,10 +491,7 @@ export class AuthController {
         });
       }
 
-      const samePassword = await AccountService.authenticate(
-        user.email,
-        password,
-      );
+      const samePassword = await AccountService.authenticate(user.email, req.body.password);
       if (samePassword.isAuthenticated) {
         return constructResponse({
           res,
@@ -542,7 +500,8 @@ export class AuthController {
           apiObject: API_OBJECTS.Account,
         });
       }
-      await AccountService.changePassword(user.id, password);
+
+      await AccountService.changePassword(user.id, req.body.password);
       await AccountService.deleteVerificationToken(dbOTP.email, dbOTP.code);
 
       return constructResponse({
@@ -552,8 +511,6 @@ export class AuthController {
         apiObject: API_OBJECTS.Account,
       });
     } catch (error) {
-      // console.error(error);
-      // If an error occurs, send an error response
       return constructResponse({
         res,
         message: ERROR_MESSAGES.InternalServerError,
@@ -566,8 +523,7 @@ export class AuthController {
 
   static changePassword: RequestHandler = async (req: any, res) => {
     try {
-      const { password, newPassword } = req.body;
-      if (!password || !newPassword)
+      if (!req.body.password || !req.body.newPassword)
         return constructResponse({
           res,
           message: ERROR_MESSAGES.BadRequestError,
@@ -575,14 +531,8 @@ export class AuthController {
           apiObject: API_OBJECTS.Auth,
         });
 
-      const isPasswordCorrect = await AccountService.authenticate(
-        req.user.email,
-        password,
-      );
-      const samePassword = await AccountService.authenticate(
-        req.user.email,
-        newPassword,
-      );
+      const isPasswordCorrect = await AccountService.authenticate(req.user.email, req.body.password);
+      const samePassword = await AccountService.authenticate(req.user.email, req.body.newPassword);
 
       if (!isPasswordCorrect.isAuthenticated) {
         return constructResponse({
@@ -592,6 +542,7 @@ export class AuthController {
           apiObject: API_OBJECTS.Account,
         });
       }
+
       if (samePassword.isAuthenticated) {
         return constructResponse({
           res,
@@ -601,7 +552,7 @@ export class AuthController {
         });
       }
 
-      await AccountService.changePassword(req.user.id, newPassword);
+      await AccountService.changePassword(req.user.id, req.body.newPassword);
 
       return constructResponse({
         res,
@@ -610,7 +561,6 @@ export class AuthController {
         apiObject: API_OBJECTS.Account,
       });
     } catch (error) {
-      // console.error(error);
       return constructResponse({
         res,
         message: ERROR_MESSAGES.InternalServerError,
@@ -620,5 +570,4 @@ export class AuthController {
       });
     }
   };
-
 }

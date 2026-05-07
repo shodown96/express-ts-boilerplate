@@ -7,58 +7,52 @@ import {
 } from "@/services";
 import { GoogleOauthTokenResponse, GoogleOauthUserResponse } from "@/types/oauth";
 import { constructResponse } from "@/utilities/common";
-import axios from "axios";
 import { RequestHandler } from "express";
 
 export class OauthController {
     static googleSignIn: RequestHandler = async (req, res) => {
         try {
+
             const { code } = req.body;
             const referrer = req.headers.referer;
-            const tokenRes = await axios.post(
-                'https://oauth2.googleapis.com/token',
-                new URLSearchParams({
+
+            const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
                     code: decodeURIComponent(code),
                     client_id: process.env.GOOGLE_CLIENT_ID!,
                     client_secret: process.env.GOOGLE_CLIENT_SECRET!,
                     redirect_uri: `${referrer}sso-callback`,
                     grant_type: 'authorization_code',
                 }),
-                {
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                }
-            );
-            const { access_token } = tokenRes.data as GoogleOauthTokenResponse;
-
-            const userRes = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
-                headers: {
-                    Authorization: `Bearer ${access_token}`,
-                },
             });
-            // console.log("userRes", userRes.data)
-            const user = userRes.data as GoogleOauthUserResponse;
+
+            const { access_token } = await tokenRes.json() as GoogleOauthTokenResponse;
+
+            const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                headers: { Authorization: `Bearer ${access_token}` },
+            });
+
+            const userData = await userRes.json();
+            const user = userData as GoogleOauthUserResponse;
 
             const existingAccount = await AccountService.getAccount(user.email);
+            let accessToken = ""
+            let refreshToken = ""
 
             let updated;
             if (existingAccount) {
+                console.log(existingAccount.id)
                 updated = await AccountService.updateAccount(existingAccount.id, {
-                    avatar: {
-                        upsert: {
-                            where: { id: String(existingAccount.avatarId) },
-                            create: { url: user.picture },
-                            update: { url: user.picture }
-                        }
-                    },
+                    avatarUrl: user.picture,
                     lastLogin: new Date(),
                 });
             } else {
                 updated = await AccountService.createAccount({
                     name: user.name,
                     email: user.email,
-                    avatar: { create: { url: user.picture } },
+                    avatarUrl: user.picture,
                     lastLogin: new Date(),
                 });
                 if (updated) {
@@ -73,21 +67,24 @@ export class OauthController {
                 }
             }
             if (updated) {
-                const accessToken = AuthService.generateAccessToken(updated);
-                res.cookie(ACCESS_TOKEN_NAME, accessToken, {
-                    httpOnly: true,
-                    maxAge: 24 * 60 * 60 * 1000,
-                    secure: process.env.NODE_ENV === "development" ? false : true,
-                    sameSite: process.env.NODE_ENV === "development" ? undefined : "strict",
-                    path: "/",
-                    domain: process.env.DOMAIN
-                })
+                accessToken = AuthService.generateAccessToken(updated);
+                refreshToken = AuthService.generateRefreshToken(updated);
+                AuthService.setCookie({ req, res, token: accessToken, tokenName: ACCESS_TOKEN_NAME })
             }
+            const data = {
+                user: {
+                    ...updated,
+                    role: undefined,
+                    isAdmin: updated.role.includes("admin")
+                },
+                accessToken,
+                refreshToken
+            };
             return constructResponse({
                 res,
                 message: STRINGS.LoginSuccess,
                 code: 200,
-                data: updated,
+                data,
                 apiObject: API_OBJECTS.Account,
             });
         } catch (error) {

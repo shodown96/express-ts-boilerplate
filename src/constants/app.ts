@@ -14,7 +14,8 @@ export const API_OBJECTS = {
   OTP: 'OTP',
   Token: 'Token',
 };
-export const APP_NAME = "Start"
+export const APP_NAME = "App"
 export const DEFAULT_PAGE_SIZE = 25;
 export const VERIFICATION_TOEKN_LENGTH = 6;
-export const ACCESS_TOKEN_NAME = "start_token"
+export const ACCESS_TOKEN_NAME = "app_token"
+export const OTP_EXPIRES_AT_MS = 10 * 60 * 1000 // 10 MINS

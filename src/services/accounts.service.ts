@@ -5,7 +5,7 @@ import {
 } from "@prisma/client";
 import { prisma } from "./prisma.service";
 import { AuthService } from ".";
-import { DEFAULT_PAGE_SIZE } from "@/constants/app";
+import { DEFAULT_PAGE_SIZE, OTP_EXPIRES_AT_MS } from "@/constants/app";
 import { PaginationParams } from "@/interfaces/common";
 import { paginateItems } from "@/utilities/common";
 
@@ -20,7 +20,6 @@ export class AccountService {
         email: params.email.toLowerCase(),
         password: params.password ? (hashed ? hashedPassword : params.password) : undefined,
       },
-      include: { avatar: { select: { url: true } } },
     });
     prisma.verificationToken.deleteMany({
       where: { email: account.email },
@@ -34,7 +33,7 @@ export class AccountService {
     const account = await prisma.account.update({
       where: { id },
       data: { password: hashedPassword },
-      include: { business: true, subscription: true, avatar: { select: { url: true } } },
+      include: { business: true, subscription: true },
     });
     return { ...account, password: true };
   };
@@ -46,7 +45,7 @@ export class AccountService {
     const { password: p, ...updatedData } = data;
     const updated = await prisma.account.update({
       where: { id },
-      include: { business: true, subscription: true, avatar: { select: { url: true } } },
+      include: { business: true, subscription: true },
       data: updatedData,
     });
     return { ...updated, password: !!updated.password }
@@ -70,7 +69,7 @@ export class AccountService {
         ],
         role: AccountRole.user,
       },
-      include: { business: true, subscription: true, avatar: { select: { url: true } } },
+      include: { business: true, subscription: true },
     });
     if (!account) {
       return null;
@@ -96,7 +95,7 @@ export class AccountService {
       where: WHERE_QUERY,
       skip: (Number(page) - 1) * Number(pageSize),
       take: Number(pageSize),
-      include: { business: true, subscription: true, avatar: { select: { url: true } } },
+      include: { business: true, subscription: true },
     });
     const total = await prisma.account.count({
       where: WHERE_QUERY,
@@ -129,7 +128,6 @@ export class AccountService {
       include: {
         business: true,
         subscription: true,
-        avatar: { select: { url: true } },
         accountDevices: includeDevices
       },
     });
@@ -150,25 +148,23 @@ export class AccountService {
 
 
   static createVerificationToken = async (email: string) => {
-    let verificationToken;
     const code = AuthService.generateVerificationToken();
-    verificationToken = await prisma.verificationToken.findUnique({
+    const expiresAt = new Date(Date.now() + OTP_EXPIRES_AT_MS);
+
+    const existing = await prisma.verificationToken.findFirst({
       where: { email },
     });
-    if (!verificationToken) {
-      verificationToken = await prisma.verificationToken.create({
-        data: { email, code },
+
+    const verificationToken = existing
+      ? await prisma.verificationToken.update({
+        where: { id: existing.id },
+        data: { code, expiresAt },
+      })
+      : await prisma.verificationToken.create({
+        data: { email, code, expiresAt },
       });
-    } else {
-      verificationToken = await prisma.verificationToken.update({
-        where: { email },
-        data: { code }
-      });
-    }
+
     return verificationToken;
-    // TODO: check if otp has been called more than once in 1mins, 
-    // then throw http error
-    // or just implement a count
   };
 
 
