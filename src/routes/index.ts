@@ -1,5 +1,6 @@
 import { API_OBJECTS, APP_NAME, BASE_API_ENDPOINT } from "@/constants/app";
 import { swaggerSpec } from "@/utilities/swagger";
+import { renderMarkdownFile } from "@/utilities/markdown";
 import { Router } from "express";
 import swaggerUi from "swagger-ui-express";
 import pkg from "../../package.json";
@@ -21,6 +22,8 @@ appRouter.use("/api/v1/users", usersRouter);
 
 // Swagger Docs
 appRouter.get("/api/docs/openapi.json", (_, res) => { res.json(swaggerSpec) });
+appRouter.get("/api/docs/guide", (_, res) => renderMarkdownFile(res, "API.md"));
+appRouter.get("/api/docs/architecture", (_, res) => renderMarkdownFile(res, "ARCHITECTURE.md"));
 appRouter.use(
     "/api/docs",
     swaggerUi.serve,
@@ -30,20 +33,22 @@ appRouter.use(
         },
     })
 );
+appRouter.get("/", (_, res) => renderMarkdownFile(res, "BASE.md"));
 
-appRouter.get("/", (req, res) =>
-    constructResponse({
-        res,
-        code: 200,
-        apiObject: API_OBJECTS.Base,
-        message: `Welcome to ${APP_NAME} API`,
-        data: {
-            version: pkg.version,
-            docs: `${BASE_API_ENDPOINT}/api/docs`,
-            openapi: `${BASE_API_ENDPOINT}/api/docs/openapi.json`
-        }
-    })
-);
+// appRouter.get("/", (req, res) =>
+//     constructResponse({
+//         res,
+//         code: 200,
+//         apiObject: API_OBJECTS.Base,
+//         message: `Welcome to ${APP_NAME} API`,
+//         data: {
+//             version: pkg.version,
+//             docs: `${BASE_API_ENDPOINT}/api/docs`,
+//             openapi: `${BASE_API_ENDPOINT}/api/docs/openapi.json`,
+//             guide: `${BASE_API_ENDPOINT}/api/docs/guide`,
+//         }
+//     })
+// );
 
 
 export default appRouter;

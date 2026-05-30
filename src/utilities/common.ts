@@ -133,7 +133,7 @@ export const constructResponse = ({
       (isSuccess
         ? STRINGS.Success
         : ERROR_MESSAGES.InternalServerError),
-    errorMessage: !isSuccess ? data : undefined,
+    error: !isSuccess ? data : undefined,
     result: isSuccess ? data : {},
   };
   return res.status(code).json(_res) as any;

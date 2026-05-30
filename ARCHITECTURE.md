@@ -1,0 +1,195 @@
+# Architecture
+
+Technical reference for backend developers working on the App API.
+
+---
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js |
+| Framework | Express 5 |
+| Language | TypeScript 5 |
+| ORM | Prisma 7 (PostgreSQL via `pg` adapter) |
+| Auth | JSON Web Tokens (`jsonwebtoken`) + bcrypt |
+| Email | Nodemailer + Resend |
+| API Docs | swagger-jsdoc + swagger-ui-express |
+| Markdown rendering | `marked` |
+| Dev server | nodemon + ts-node + tsconfig-paths |
+
+---
+
+## Project Structure
+
+```
+src/
+├── index.ts              # Entry point — imports server and starts listening
+├── app.ts                # Creates Express app and HTTP server instances
+├── server.ts             # Configures middleware (cors, cookies, body parser) and mounts the router
+│
+├── routes/
+│   ├── index.ts          # Root router — mounts all sub-routers, Swagger UI, and the base GET /
+│   ├── auth.router.ts    # /api/v1/auth/*
+│   ├── oauth.router.ts   # /api/v1/oauth/*
+│   └── users.router.ts   # /api/v1/users/*
+│
+├── controllers/
+│   ├── auth.controller.ts
+│   ├── oauth.controller.ts
+│   └── users.controller.ts
+│
+├── services/
+│   ├── accounts.service.ts  # All Prisma account/OTP operations
+│   ├── auth.service.ts      # JWT generation/verification, cookie management, password hashing
+│   ├── email.service.ts     # HTML email dispatch via Nodemailer / Resend
+│   └── prisma.service.ts    # Prisma client singleton
+│
+├── middlewares/
+│   └── auth.middleware.ts   # authenticate — extracts and verifies JWT, attaches req.user
+│
+├── constants/
+│   ├── app.ts               # APP_NAME, API_OBJECTS enum, token names, env re-exports
+│   └── messages.ts          # STRINGS and ERROR_MESSAGES string constants
+│
+├── utilities/
+│   ├── common.ts            # constructResponse, pagination, OTP generation, misc helpers
+│   ├── markdown.ts          # renderMarkdownFile / renderMarkdownString — serves .md as HTML
+│   ├── swagger.ts           # swaggerSpec — swagger-jsdoc options and spec export
+│   └── ip.ts                # IP utility helpers
+│
+├── interfaces/              # Shared TypeScript interfaces (Paystack, Stripe, common)
+├── types/                   # Module augmentation (express.d.ts, environment.d.ts, etc.)
+└── templates/               # Nodemailer HTML email templates
+```
+
+---
+
+## Request Lifecycle
+
+```
+HTTP request
+  → Express middleware (json, urlencoded, cookieParser, cors)
+  → X-Powered-By header injection
+  → appRouter (routes/index.ts)
+    → sub-router (auth / oauth / users)
+      → [authenticate middleware if protected]
+      → controller method
+        → service(s)
+          → Prisma / external API
+        → constructResponse()
+  → HTTP response
+```
+
+---
+
+## Layered Architecture
+
+### Routes
+
+Route files do two things only: register the HTTP method + path and attach middleware + controller. All JSDoc Swagger annotations live here so the spec is co-located with the route definition. Routes call controller static methods — no business logic.
+
+### Controllers
+
+Controllers are stateless classes with static `RequestHandler` methods. They validate the request shape (required fields), call one or more services, and call `constructResponse` with the result. No Prisma or email code lives in a controller.
+
+### Services
+
+`AccountService` owns all Prisma queries related to accounts and OTP tokens. `AuthService` owns JWT signing/verification, password hashing, and cookie management. `EmailService` owns template rendering and dispatch. Services are called by controllers and occasionally by other services; they never touch `req` or `res`.
+
+### constructResponse
+
+All responses go through `constructResponse` in `src/utilities/common.ts`. It normalises the envelope shape, maps 2xx codes to `status: "success"` (with `result`), and non-2xx to `status: "failure"` (with `error`). In development / staging environments it also logs request outcomes to stdout.
+
+---
+
+## Authentication System
+
+### Token strategy
+
+The API issues two JWTs on sign-in/sign-up:
+
+- **Access token** — 14-day JWT signed with `ACCESS_TOKEN_SECRET`. Payload: `{ accountId }`.
+- **Refresh token** — 21-day JWT signed with `REFRESH_TOKEN_SECRET`. Payload: `{ accountId }`.
+
+### Token delivery
+
+The access token is returned in the JSON response body so the client can store it. On OAuth sign-in (`POST /oauth/google-sign-in`) the access token is also written to an httpOnly cookie (`app_token`).
+
+### authenticate middleware
+
+`src/middlewares/auth.middleware.ts` runs on all protected routes. It:
+
+1. Reads the token from `Authorization: Bearer <token>` first, falling back to the `app_token` cookie.
+2. Verifies the JWT with `AuthService.verifyAccessToken`.
+3. Fetches the full account from the database.
+4. Rejects banned accounts with a 401.
+5. Fires `AccountService.syncLastLogin` (non-blocking) and attaches the account to `req.user`.
+
+### OTP / verification tokens
+
+6-digit numeric OTPs are generated by `AuthService.generateVerificationToken` and stored in the database via `AccountService.createVerificationToken`. They expire after 10 minutes (`OTP_EXPIRES_AT_MS`). `verifyCode` validates without consuming; `verifyEmail` and `resetPassword` consume the token on success.
+
+---
+
+## Database
+
+Prisma with a PostgreSQL backend via the `@prisma/adapter-pg` driver. The Prisma client is a singleton in `src/services/prisma.service.ts`. Schema lives in `prisma/`. Common commands:
+
+```bash
+npm run db:push      # push schema to DB without migrations (dev)
+npm run db:migrate   # create and apply a migration
+npm run db:seed      # run prisma/seed.ts
+npm run db:studio    # open Prisma Studio
+```
+
+---
+
+## Email
+
+`EmailService.sendHTMLEmail` accepts an `emailType` string that maps to an HTML template in `src/templates/`. Template variables (e.g. `name`, `otp`) are injected at send time. The service falls back between Nodemailer and Resend depending on configuration.
+
+---
+
+## OpenAPI / Swagger
+
+`src/utilities/swagger.ts` configures `swagger-jsdoc` to scan `./src/routes/*.ts` for JSDoc annotations and produces a spec at runtime. The spec is served at:
+
+- `GET /api/docs` — Swagger UI
+- `GET /api/docs/openapi.json` — raw OpenAPI 3.0.3 JSON
+
+Annotations use the `@swagger` tag on route files. The base server URL in the spec is `http://localhost:4000/api/v1`.
+
+---
+
+## Markdown Pages
+
+`src/utilities/markdown.ts` exposes two helpers:
+
+- `renderMarkdownFile(res, filename)` — reads a `.md` file from the project root, interpolates `{{BASE_URL}}`, converts to HTML, and sends a styled response.
+- `renderMarkdownString(res, md, title)` — same pipeline from a raw string.
+
+Used to serve documentation pages (e.g. `API.md`) as styled HTML without a frontend build step.
+
+---
+
+## CORS & Security
+
+Allowed origins are set via the `ALLOWED_ORIGINS` environment variable (comma-separated). Credentials are enabled so cookies cross origins. The `X-Powered-By` header is overridden to the app name. Cookie security (`secure`, `sameSite`, `httpOnly`) is applied based on whether the environment is development or production.
+
+---
+
+## Environment Variables
+
+| Variable | Purpose |
+|---|---|
+| `PORT` | HTTP listen port (default: 4000) |
+| `BASE_API_ENDPOINT` | Public URL of this API (used in links and cookie domain) |
+| `MAIN_APP_URL` | Frontend URL (used for SSO callback construction) |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins |
+| `ACCESS_TOKEN_SECRET` | JWT signing secret for access tokens |
+| `REFRESH_TOKEN_SECRET` | JWT signing secret for refresh tokens |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `DOMAIN` | Cookie domain for production |
+| `NODE_ENV` | `development` enables request logging and relaxed cookie rules |
