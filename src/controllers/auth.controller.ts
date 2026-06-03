@@ -54,7 +54,7 @@ export class AuthController {
         email: req.body.email,
         subject: `Welcome to The ${APP_NAME}`,
         params: { name: getFirstName(user.name) },
-        emailType: hasPassed ? "welcome" : "welcome2",
+        emailType: hasPassed ? "welcome" : "welcome_2",
       });
 
       return constructResponse({

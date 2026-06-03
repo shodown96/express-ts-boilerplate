@@ -6,22 +6,41 @@ const pathKVP = {
   registration: "src/templates/registration.html",
   reset: "src/templates/reset.html",
   welcome: "src/templates/welcome.html",
-  welcome2: "src/templates/welcome-2.html",
+  welcome_2: "src/templates/welcome_2.html",
   subscription: "src/templates/subscription.html",
-  newAdmin: "src/templates/new-admin.html",
+  new_admin: "src/templates/new_admin.html",
   report: "src/templates/report.html",
   banned: "src/templates/banned.html",
   unbanned: "src/templates/unbanned.html",
-  postDeleted: "src/templates/post-deleted.html",
+  post_deleted: "src/templates/post_deleted.html",
 };
 
 type PathKVPType = keyof typeof pathKVP
 
-interface HTMLEmailProps {
+type EmailTemplateParams = {
+  registration: { name: string; otp: string };
+  reset: { name: string; otp: string };
+  welcome: { name: string };
+  welcome_2: { name: string };
+  subscription: {
+    name: string;
+    planName: string;
+    planAmount: string;
+    purchaseDate: string;
+    expiryDate: string;
+  };
+  new_admin: { name: string; email: string; password: string; url: string };
+  report: { reporter: string; reportedContent: string; reason: string; message: string };
+  banned: { name: string; reason: string; link: string };
+  unbanned: { name: string };
+  post_deleted: { name: string; body: string; media: string; reason: string };
+};
+
+interface HTMLEmailProps<T extends PathKVPType> {
   email?: string;
   subject: string;
-  params: any;
-  emailType: PathKVPType
+  params: EmailTemplateParams[T];
+  emailType: T;
 }
 
 interface EmailProps {
@@ -67,16 +86,16 @@ export class EmailService {
     }
   };
 
-  static sendHTMLEmail = async ({
+  static sendHTMLEmail = async <T extends PathKVPType>({
     email = String(process.env.EMAIL_CONTACT_ADDRESS),
     subject,
     params,
     emailType,
-  }: HTMLEmailProps) => {
+  }: HTMLEmailProps<T>) => {
     const htmlTemplate = fs.readFileSync(pathKVP[emailType], "utf-8");
 
     // Replace template placeholders with dynamic data
-    const fullParams = { ...params, appName: APP_NAME }
+    const fullParams = { ...params, appName: APP_NAME } as Record<string, string>
     const filledTemplate = htmlTemplate.replace(/{{(\w+)}}/g, (match, p1) => {
       return fullParams[p1] || match;
     });
