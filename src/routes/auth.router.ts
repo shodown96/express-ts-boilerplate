@@ -24,15 +24,16 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, email, whatsappNumber]
+ *             required: [email]
  *             properties:
  *               name:
  *                 type: string
  *               email:
  *                 type: string
  *                 format: email
- *               whatsappNumber:
+ *               password:
  *                 type: string
+ *                 format: password
  *     responses:
  *       201:
  *         description: Account created successfully. Returns user object, accessToken and refreshToken.

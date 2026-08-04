@@ -3,37 +3,17 @@ import fs from "fs";
 import nodemailer from "nodemailer";
 
 const pathKVP = {
-  registration: "src/templates/registration.html",
+  otp: "src/templates/otp.html",
   reset: "src/templates/reset.html",
   welcome: "src/templates/welcome.html",
-  welcome_2: "src/templates/welcome_2.html",
-  subscription: "src/templates/subscription.html",
-  new_admin: "src/templates/new_admin.html",
-  report: "src/templates/report.html",
-  banned: "src/templates/banned.html",
-  unbanned: "src/templates/unbanned.html",
-  post_deleted: "src/templates/post_deleted.html",
 };
 
 type PathKVPType = keyof typeof pathKVP
 
 type EmailTemplateParams = {
-  registration: { name: string; otp: string };
+  otp: { name: string; otp: string };
   reset: { name: string; otp: string };
   welcome: { name: string };
-  welcome_2: { name: string };
-  subscription: {
-    name: string;
-    planName: string;
-    planAmount: string;
-    purchaseDate: string;
-    expiryDate: string;
-  };
-  new_admin: { name: string; email: string; password: string; url: string };
-  report: { reporter: string; reportedContent: string; reason: string; message: string };
-  banned: { name: string; reason: string; link: string };
-  unbanned: { name: string };
-  post_deleted: { name: string; body: string; media: string; reason: string };
 };
 
 interface HTMLEmailProps<T extends PathKVPType> {
@@ -47,6 +27,7 @@ interface EmailProps {
   email: string,
   subject: string,
   text: string,
+  replyTo?: string,
 }
 
 
@@ -55,6 +36,7 @@ export class EmailService {
     email = String(process.env.EMAIL_CONTACT_ADDRESS),
     subject,
     text,
+    replyTo,
   }: EmailProps) => {
     try {
       const transporter = nodemailer.createTransport({
@@ -72,7 +54,7 @@ export class EmailService {
         to: email,
         subject: subject,
         html: text,
-        replyTo: email === process.env.EMAIL_CONTACT_ADDRESS ? undefined : process.env.EMAIL_CONTACT_ADDRESS
+        replyTo: replyTo || (email === process.env.EMAIL_CONTACT_ADDRESS ? undefined : process.env.EMAIL_CONTACT_ADDRESS)
       });
       // console.log(sent)
 

@@ -34,7 +34,7 @@ const router = Router();
  *                   type: string
  *                 email:
  *                   type: string
- *                 whatsappNumber:
+ *                 avatarUrl:
  *                   type: string
  *                 isAdmin:
  *                   type: boolean
@@ -47,7 +47,7 @@ const router = Router();
  *         description: Internal server error
  *   patch:
  *     summary: Update the current user's profile
- *     description: Updates name and/or whatsappNumber for the authenticated account.
+ *     description: Updates name and/or avatarUrl for the authenticated account.
  *     tags: [Users]
  *     security:
  *       - cookieAuth: []
@@ -60,7 +60,7 @@ const router = Router();
  *             properties:
  *               name:
  *                 type: string
- *               whatsappNumber:
+ *               avatarUrl:
  *                 type: string
  *     responses:
  *       200:

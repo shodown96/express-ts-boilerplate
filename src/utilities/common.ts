@@ -205,13 +205,3 @@ export const generateFileName = ({
   const randomName = name.length === 0 ? generateRandomString() : name;
   return `${folder}/${randomName}.${ext}`
 }
-
-export const hasDatePassed = (dateString: string) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
-
-  const targetDate = new Date(dateString);
-  targetDate.setHours(0, 0, 0, 0); // Reset time for accurate comparison
-
-  return today > targetDate;
-};

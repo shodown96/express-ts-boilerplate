@@ -2,6 +2,7 @@ export { prisma } from "./prisma.service";
 export { AuthService } from "./auth.service";
 export { AccountService } from "./accounts.service";
 export { EmailService } from "./email.service";
+export { S3Service } from "./s3.service";
 // export { default as AdminService } from "./admin.service";
 // export { default as AppStoreService } from "./appstore.service";
 // export { default as AWSService } from "./aws.service";

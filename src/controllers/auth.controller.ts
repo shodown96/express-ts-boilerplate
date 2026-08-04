@@ -5,7 +5,7 @@ import {
   AuthService,
   EmailService
 } from "@/services"
-import { constructResponse, getFirstName, hasDatePassed } from "@/utilities/common";
+import { constructResponse, getFirstName } from "@/utilities/common";
 import { ACCESS_TOKEN_NAME, API_OBJECTS, APP_NAME } from "@/constants/app";
 import { ERROR_MESSAGES, STRINGS } from "@/constants/messages";
 
@@ -49,12 +49,11 @@ export class AuthController {
       const accessToken = AuthService.generateAccessToken(user);
       const refreshToken = AuthService.generateRefreshToken(user);
 
-      const hasPassed = hasDatePassed("2025-03-14");
       EmailService.sendHTMLEmail({
         email: req.body.email,
         subject: `Welcome to The ${APP_NAME}`,
         params: { name: getFirstName(user.name) },
-        emailType: hasPassed ? "welcome" : "welcome_2",
+        emailType: "welcome",
       });
 
       return constructResponse({
@@ -287,7 +286,7 @@ export class AuthController {
         email: req.body.email,
         subject: `Your ${APP_NAME} Account Verification OTP`,
         params: { otp: otp.code, name: getFirstName(user?.name) || req.body.email },
-        emailType: "registration",
+        emailType: "otp",
       });
 
       return constructResponse({

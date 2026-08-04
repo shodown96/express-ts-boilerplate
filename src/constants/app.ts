@@ -13,6 +13,7 @@ export const API_OBJECTS = {
   Account: "Account",
   OTP: 'OTP',
   Token: 'Token',
+  Contact: 'Contact',
 };
 export const APP_NAME = "App"
 export const DEFAULT_PAGE_SIZE = 25;

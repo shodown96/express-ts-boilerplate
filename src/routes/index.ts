@@ -8,6 +8,7 @@ import { constructResponse } from "../utilities/common";
 import { authRouter } from "./auth.router";
 import { oauthRouter } from "./oauth.router";
 import { usersRouter } from "./users.router";
+import { contactRouter } from "./contact.router";
 
 const appRouter = Router();
 
@@ -19,6 +20,9 @@ appRouter.use("/api/v1/oauth", oauthRouter);
 
 // Define user routes
 appRouter.use("/api/v1/users", usersRouter);
+
+// Define contact routes
+appRouter.use("/api/v1/contact", contactRouter);
 
 // Swagger Docs
 appRouter.get("/api/docs/openapi.json", (_, res) => { res.json(swaggerSpec) });
